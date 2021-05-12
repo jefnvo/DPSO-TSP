@@ -27,7 +27,7 @@ public class DiscretePSO {
         ArrayList<Particle> swarm = initializeSwarm();
         for (int i = 0; i < iterations; i++) {
             gBest = swarm.stream()
-                .min(Comparator.comparing(Particle::getCost))
+                .min(Comparator.comparing(Particle::getFitness))
                 .orElseThrow(NoSuchElementException::new);
 
             for (Particle particle : swarm) {
@@ -40,7 +40,7 @@ public class DiscretePSO {
 
                 for (int j = 0; j < numCities; j++) {
                     if(!actualSolution.get(j).equals(pBestSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, pBestSolution.indexOf(j),alfa, 0);
+                        Velocity swapOperator = new Velocity(j, pBestSolution.indexOf(actualSolution.get(j)), alfa);
 
                         tmpVelocity.add(swapOperator);
 
@@ -51,14 +51,30 @@ public class DiscretePSO {
                 }
                 for (int j = 0; j < numCities; j++) {
                     if(!actualSolution.get(j).equals(gBestSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, gBestSolution.indexOf(j),0, beta);
+                        Velocity swapOperator = new Velocity(j, gBestSolution.indexOf(actualSolution.get(j)), beta);
 
                         tmpVelocity.add(swapOperator);
 
-                        Long aux = pBestSolution.get(swapOperator.getX1());
-                        pBestSolution.set(swapOperator.getX1(), pBestSolution.get(swapOperator.getX2()));
-                        pBestSolution.set(swapOperator.getX2(), aux);
+                        Long aux = gBestSolution.get(swapOperator.getX1());
+                        gBestSolution.set(swapOperator.getX1(), gBestSolution.get(swapOperator.getX2()));
+                        gBestSolution.set(swapOperator.getX2(), aux);
                     }
+                }
+                particle.setVelocity(tmpVelocity);
+                for (Velocity swapOperator : tmpVelocity) {
+                    if(Math.random() <= swapOperator.getProbability()) {
+                        Long aux = actualSolution.get(swapOperator.getX1());
+                        actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
+                        actualSolution.set(swapOperator.getX2(), aux);
+                    }
+                }
+                particle.setSolution(actualSolution);
+                //TODO: Update cost new solution based on distance matrix
+                Long actualFitness;
+
+                if(actualFitness < particle.getBestFitness()) {
+                    particle.setpBest(actualSolution);
+                    particle.setBestFitness(actualFitness);
                 }
             }
         }

@@ -4,15 +4,15 @@ public class Particle {
     ArrayList<Long> solution;
     ArrayList<Velocity> velocity;
     ArrayList<Long> pBest;
-    Double fitness;
-    Double bestFitness;
-    Long cost;
+    Long fitness;
+    Long bestFitness;
 
-    public Particle(ArrayList<Long> solution, ArrayList<Velocity> velocity, Long cost) {
+    public Particle(ArrayList<Long> solution, ArrayList<Velocity> velocity, Long fitness) {
         this.solution = solution;
         this.velocity = velocity;
         this.pBest = solution;
-        this.cost = cost;
+        this.bestFitness = fitness;
+        this.fitness = fitness;
     }
 
     public ArrayList<Long> getSolution() {
@@ -39,27 +39,19 @@ public class Particle {
         this.pBest = pBest;
     }
 
-    public Double getFitness() {
+    public Long getFitness() {
         return fitness;
     }
 
-    public void setFitness(Double fitness) {
+    public void setFitness(Long fitness) {
         this.fitness = fitness;
     }
 
-    public Double getBestFitness() {
+    public Long getBestFitness() {
         return bestFitness;
     }
 
-    public void setBestFitness(Double bestFitness) {
+    public void setBestFitness(Long bestFitness) {
         this.bestFitness = bestFitness;
-    }
-
-    public Long getCost() {
-        return cost;
-    }
-
-    public void setCost(Long cost) {
-        this.cost = cost;
     }
 }
