@@ -20,7 +20,6 @@ public class DiscretePSO {
         this.beta = beta;
         this.distanceWeight = distanceWeight;
         this.iterations = iterations;
-
     }
 
     public void execute() {
@@ -69,8 +68,7 @@ public class DiscretePSO {
                     }
                 }
                 particle.setSolution(actualSolution);
-                //TODO: Update cost new solution based on distance matrix
-                Long actualFitness;
+                Long actualFitness = calcFitnessTour(actualSolution);
 
                 if(actualFitness < particle.getBestFitness()) {
                     particle.setpBest(actualSolution);
@@ -78,7 +76,7 @@ public class DiscretePSO {
                 }
             }
         }
-        
+        System.out.println("Global best solution="+gBest.getSolution()+"\nGlobal best fitness="+gBest.getFitness());
     }
 
     //passo 1
@@ -91,14 +89,25 @@ public class DiscretePSO {
         }
 
         for (int i = 0; i < swarmSize; i++) {
-            ArrayList<Long> newTour = new ArrayList<>();
+            ArrayList<Long> newTour = tour;
             Collections.shuffle(newTour);
             ArrayList<Velocity> velocity = new ArrayList<>();
-            //TODO: calc the cost of tour based on distance weight
-            Particle p = new Particle(tour, velocity, 0L);
+            long fitness = calcFitnessTour(newTour);
+            Particle p = new Particle(tour, velocity, fitness);
             swarm.add(p);
         }
         return swarm;
+    }
+
+    private long calcFitnessTour(ArrayList<Long> tour) {
+        int startCity = tour.get(0).intValue();
+        int lastCity = tour.get(numCities - 1).intValue();
+        long distanceFirstAndLastCity = distanceWeight[startCity][lastCity];
+        long totalDistance = 0;
+        for (int i = 0; i < numCities - 1; i++) {
+            totalDistance += distanceWeight[tour.get(i).intValue()][tour.get(i + 1).intValue()];
+        }
+        return  distanceFirstAndLastCity + totalDistance;
     }
 
     public Particle getgBest() {
@@ -116,4 +125,5 @@ public class DiscretePSO {
     public void setIterations(int iterations) {
         this.iterations = iterations;
     }
+
 }
