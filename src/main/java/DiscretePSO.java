@@ -65,7 +65,7 @@ public class DiscretePSO {
                 }
                 particle.setVelocity(tmpVelocity);
                 for (Velocity swapOperator : tmpVelocity) {
-                    Double r = Math.random();
+                    double r = Math.random();
                     if(r <= swapOperator.getProbability()) {
                         Long aux = actualSolution.get(swapOperator.getX1());
                         actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
