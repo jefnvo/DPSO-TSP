@@ -3,14 +3,14 @@ import java.util.ArrayList;
 public class Particle {
     ArrayList<Long> solution;
     ArrayList<Velocity> velocity;
-    ArrayList<Long> pBest;
+    ArrayList<Long> bestSolution;
     Long fitness;
     Long bestFitness;
 
-    public Particle(ArrayList<Long> solution, ArrayList<Velocity> velocity, Long fitness) {
+    public Particle(ArrayList<Long> solution, Long fitness) {
         this.solution = solution;
-        this.velocity = velocity;
-        this.pBest = solution;
+        this.velocity = new ArrayList<>();
+        this.bestSolution = solution;
         this.bestFitness = fitness;
         this.fitness = fitness;
     }
@@ -31,12 +31,12 @@ public class Particle {
         this.velocity = velocity;
     }
 
-    public ArrayList<Long> getpBest() {
-        return pBest;
+    public ArrayList<Long> getBestSolution() {
+        return bestSolution;
     }
 
-    public void setpBest(ArrayList<Long> pBest) {
-        this.pBest = pBest;
+    public void setBestSolution(ArrayList<Long> bestSolution) {
+        this.bestSolution = bestSolution;
     }
 
     public Long getFitness() {

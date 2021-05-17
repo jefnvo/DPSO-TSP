@@ -9,7 +9,7 @@ public class DiscretePSO {
     int iterations;
     double alfa;
     double beta;
-    Particle gBest;
+    Particle globalBest;
     Long[][] distanceWeight; //para calculo da função objetivo
 
     public DiscretePSO(int numCities, int swarmSize, double alfa, double beta,
@@ -25,43 +25,48 @@ public class DiscretePSO {
     public void execute() {
         ArrayList<Particle> swarm = initializeSwarm();
         for (int i = 0; i < iterations; i++) {
-            gBest = swarm.stream()
-                .min(Comparator.comparing(Particle::getFitness))
+            globalBest = swarm.stream()
+                .min(Comparator.comparing(Particle::getBestFitness))
                 .orElseThrow(NoSuchElementException::new);
+
+            System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
 
             for (Particle particle : swarm) {
                 particle.setVelocity( new ArrayList<>());
                 ArrayList<Velocity> tmpVelocity = new ArrayList<>();
 
-                ArrayList<Long> gBestSolution = gBest.getpBest();
-                ArrayList<Long> pBestSolution = particle.getpBest();
-                ArrayList<Long> actualSolution = particle.getSolution();
+                ArrayList<Long> globalBestSolution = new ArrayList<>(globalBest.getBestSolution());
+                ArrayList<Long> particleBestSolution = new ArrayList<>(particle.getBestSolution());
+                ArrayList<Long> actualSolution = new ArrayList<>(particle.getSolution());
+
 
                 for (int j = 0; j < numCities; j++) {
-                    if(!actualSolution.get(j).equals(pBestSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, pBestSolution.indexOf(actualSolution.get(j)), alfa);
+                    if(!actualSolution.get(j).equals(particleBestSolution.get(j))) {
+                        Velocity swapOperator = new Velocity(j, particleBestSolution.indexOf(actualSolution.get(j)), alfa);
 
                         tmpVelocity.add(swapOperator);
 
-                        Long aux = pBestSolution.get(swapOperator.getX1());
-                        pBestSolution.set(swapOperator.getX1(), pBestSolution.get(swapOperator.getX2()));
-                        pBestSolution.set(swapOperator.getX2(), aux);
+                        Long aux = particleBestSolution.get(swapOperator.getX1());
+                        particleBestSolution.set(swapOperator.getX1(), particleBestSolution.get(swapOperator.getX2()));
+                        particleBestSolution.set(swapOperator.getX2(), aux);
                     }
                 }
                 for (int j = 0; j < numCities; j++) {
-                    if(!actualSolution.get(j).equals(gBestSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, gBestSolution.indexOf(actualSolution.get(j)), beta);
+                    if(!actualSolution.get(j).equals(globalBestSolution.get(j))) {
+                        Velocity swapOperator = new Velocity(j, globalBestSolution.indexOf(actualSolution.get(j)), beta);
 
                         tmpVelocity.add(swapOperator);
 
-                        Long aux = gBestSolution.get(swapOperator.getX1());
-                        gBestSolution.set(swapOperator.getX1(), gBestSolution.get(swapOperator.getX2()));
-                        gBestSolution.set(swapOperator.getX2(), aux);
+                        Long aux = globalBestSolution.get(swapOperator.getX1());
+                        globalBestSolution.set(swapOperator.getX1(), globalBestSolution.get(swapOperator.getX2()));
+                        globalBestSolution.set(swapOperator.getX2(), aux);
+
                     }
                 }
                 particle.setVelocity(tmpVelocity);
                 for (Velocity swapOperator : tmpVelocity) {
-                    if(Math.random() <= swapOperator.getProbability()) {
+                    Double r = Math.random();
+                    if(r <= swapOperator.getProbability()) {
                         Long aux = actualSolution.get(swapOperator.getX1());
                         actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
                         actualSolution.set(swapOperator.getX2(), aux);
@@ -69,14 +74,15 @@ public class DiscretePSO {
                 }
                 particle.setSolution(actualSolution);
                 Long actualFitness = calcFitnessTour(actualSolution);
+                particle.setFitness(actualFitness);
 
                 if(actualFitness < particle.getBestFitness()) {
-                    particle.setpBest(actualSolution);
+                    particle.setBestSolution(actualSolution);
                     particle.setBestFitness(actualFitness);
                 }
             }
         }
-        System.out.println("Global best solution="+gBest.getSolution()+"\nGlobal best fitness="+gBest.getFitness());
+        System.out.println("Global best solution="+ globalBest.getSolution()+"\nGlobal best fitness="+ globalBest.getFitness());
     }
 
     //passo 1
@@ -89,11 +95,9 @@ public class DiscretePSO {
         }
 
         for (int i = 0; i < swarmSize; i++) {
-            ArrayList<Long> newTour = tour;
-            Collections.shuffle(newTour);
-            ArrayList<Velocity> velocity = new ArrayList<>();
-            long fitness = calcFitnessTour(newTour);
-            Particle p = new Particle(tour, velocity, fitness);
+            Collections.shuffle(tour);
+            long fitness = calcFitnessTour(tour);
+            Particle p = new Particle(new ArrayList<>(tour), fitness);
             swarm.add(p);
         }
         return swarm;
@@ -110,12 +114,12 @@ public class DiscretePSO {
         return  distanceFirstAndLastCity + totalDistance;
     }
 
-    public Particle getgBest() {
-        return gBest;
+    public Particle getGlobalBest() {
+        return globalBest;
     }
 
-    public void setgBest(Particle gBest) {
-        this.gBest = gBest;
+    public void setGlobalBest(Particle globalBest) {
+        this.globalBest = globalBest;
     }
 
     public int getIterations() {
