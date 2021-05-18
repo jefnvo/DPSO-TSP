@@ -32,37 +32,40 @@ public class DiscretePSO {
             System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
 
             for (Particle particle : swarm) {
-                particle.setVelocity( new ArrayList<>());
-                ArrayList<Velocity> tmpVelocity = new ArrayList<>();
 
                 ArrayList<Long> globalBestSolution = new ArrayList<>(globalBest.getBestSolution());
                 ArrayList<Long> particleBestSolution = new ArrayList<>(particle.getBestSolution());
+                ArrayList<Velocity> tmpVelocity = new ArrayList<>();
+
+
                 ArrayList<Long> actualSolution = new ArrayList<>(particle.getSolution());
-
-
                 for (int j = 0; j < numCities; j++) {
-                    if(!actualSolution.get(j).equals(particleBestSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, particleBestSolution.indexOf(actualSolution.get(j)), alfa);
+                    if(!particleBestSolution.get(j).equals(actualSolution.get(j))) {
+                        Velocity swapOperator = new Velocity(j, actualSolution.indexOf(particleBestSolution.get(j)), alfa);
 
                         tmpVelocity.add(swapOperator);
 
-                        Long aux = particleBestSolution.get(swapOperator.getX1());
-                        particleBestSolution.set(swapOperator.getX1(), particleBestSolution.get(swapOperator.getX2()));
-                        particleBestSolution.set(swapOperator.getX2(), aux);
+                        Long aux = actualSolution.get(swapOperator.getX1());
+                        actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
+                        actualSolution.set(swapOperator.getX2(), aux);
                     }
                 }
+
+                actualSolution = new ArrayList<>(particle.getSolution());
                 for (int j = 0; j < numCities; j++) {
-                    if(!actualSolution.get(j).equals(globalBestSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, globalBestSolution.indexOf(actualSolution.get(j)), beta);
+                    if(!globalBestSolution.get(j).equals(actualSolution.get(j))) {
+                        Velocity swapOperator = new Velocity(j, actualSolution.indexOf(globalBestSolution.get(j)), beta);
 
                         tmpVelocity.add(swapOperator);
 
-                        Long aux = globalBestSolution.get(swapOperator.getX1());
-                        globalBestSolution.set(swapOperator.getX1(), globalBestSolution.get(swapOperator.getX2()));
-                        globalBestSolution.set(swapOperator.getX2(), aux);
+                        Long aux = actualSolution.get(swapOperator.getX1());
+                        actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
+                        actualSolution.set(swapOperator.getX2(), aux);
 
                     }
                 }
+
+                actualSolution = new ArrayList<>(particle.getSolution());
                 particle.setVelocity(tmpVelocity);
                 for (Velocity swapOperator : tmpVelocity) {
                     double r = Math.random();
@@ -72,6 +75,7 @@ public class DiscretePSO {
                         actualSolution.set(swapOperator.getX2(), aux);
                     }
                 }
+
                 particle.setSolution(actualSolution);
                 Long actualFitness = calcFitnessTour(actualSolution);
                 particle.setFitness(actualFitness);
