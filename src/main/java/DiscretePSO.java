@@ -32,61 +32,101 @@ public class DiscretePSO {
             System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
 
             for (Particle particle : swarm) {
-
                 ArrayList<Long> globalBestSolution = new ArrayList<>(globalBest.getBestSolution());
                 ArrayList<Long> particleBestSolution = new ArrayList<>(particle.getBestSolution());
-                ArrayList<Velocity> tmpVelocity = new ArrayList<>();
 
+                double bRand = Math.random();
+                double r = Math.random();
 
-                ArrayList<Long> actualSolution = new ArrayList<>(particle.getSolution());
+                //create dloc
+                ArrayList<Velocity> dLocal = createBasicSwapSequence(particle, particleBestSolution, r, alfa);
+                ArrayList<Long> distanceLoc = createSolution(particle, dLocal);
+
+                //create dglob
+                ArrayList<Velocity> dGlobal =  createBasicSwapSequence(particle, globalBestSolution, r, beta);
+                ArrayList<Long> distanceGlob = createSolution(particle, dGlobal);
+
+                //create vrand
+                ArrayList<Long> randomSolution = createRandomSolution(particle);
+                ArrayList<Velocity> destinationRandomVelocity =  createBasicSwapSequence(particle, randomSolution, r, bRand);
+
+                //dloc - dglob
+                ArrayList<Velocity> basicSwapSequenceLocGlob = new ArrayList<>();
                 for (int j = 0; j < numCities; j++) {
-                    if(!particleBestSolution.get(j).equals(actualSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, actualSolution.indexOf(particleBestSolution.get(j)), alfa);
+                    if(!distanceLoc.get(j).equals(distanceGlob.get(j))) {
+                        Velocity swapOperator = new Velocity(j, distanceGlob.indexOf(distanceLoc.get(j)), 0);
 
-                        tmpVelocity.add(swapOperator);
+                        Long aux = distanceGlob.get(swapOperator.getX1());
+                        distanceGlob.set(swapOperator.getX1(), distanceGlob.get(swapOperator.getX2()));
+                        distanceGlob.set(swapOperator.getX2(), aux);
 
-                        Long aux = actualSolution.get(swapOperator.getX1());
-                        actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
-                        actualSolution.set(swapOperator.getX2(), aux);
+                        basicSwapSequenceLocGlob.add(swapOperator);
                     }
                 }
 
-                actualSolution = new ArrayList<>(particle.getSolution());
-                for (int j = 0; j < numCities; j++) {
-                    if(!globalBestSolution.get(j).equals(actualSolution.get(j))) {
-                        Velocity swapOperator = new Velocity(j, actualSolution.indexOf(globalBestSolution.get(j)), beta);
+                //0.5 *(dloc - dglob) + vrand
+                ArrayList<Velocity> halfDistance = new ArrayList<>();
+                int halfArrayVelocity = (int) Math.floor(basicSwapSequenceLocGlob.size());
+                for(int j = 0; j<halfArrayVelocity; j++) {
+                    halfDistance.add(basicSwapSequenceLocGlob.get(j));
+                }
+                ArrayList<Velocity> halfDistancePlusRandVelocity = new ArrayList<>(halfDistance);
+                halfDistancePlusRandVelocity.addAll(destinationRandomVelocity);
 
-                        tmpVelocity.add(swapOperator);
-
-                        Long aux = actualSolution.get(swapOperator.getX1());
-                        actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
-                        actualSolution.set(swapOperator.getX2(), aux);
-
-                    }
+                //dglob + 0.5*(dloc-dglob) + vrand
+                for (Velocity swapOperator : halfDistancePlusRandVelocity) {
+                    Long aux = distanceGlob.get(swapOperator.getX1());
+                    distanceGlob.set(swapOperator.getX1(), distanceGlob.get(swapOperator.getX2()));
+                    distanceGlob.set(swapOperator.getX2(), aux);
                 }
 
-                actualSolution = new ArrayList<>(particle.getSolution());
-                particle.setVelocity(tmpVelocity);
-                for (Velocity swapOperator : tmpVelocity) {
-                    double r = Math.random();
-                    if(r <= swapOperator.getProbability()) {
-                        Long aux = actualSolution.get(swapOperator.getX1());
-                        actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
-                        actualSolution.set(swapOperator.getX2(), aux);
-                    }
-                }
-
-                particle.setSolution(actualSolution);
-                Long actualFitness = calcFitnessTour(actualSolution);
+                particle.setSolution(distanceGlob);
+                Long actualFitness = calcFitnessTour(distanceGlob);
                 particle.setFitness(actualFitness);
 
                 if(actualFitness < particle.getBestFitness()) {
-                    particle.setBestSolution(actualSolution);
+                    particle.setBestSolution(distanceGlob);
                     particle.setBestFitness(actualFitness);
                 }
             }
         }
-        System.out.println("Global best solution="+ globalBest.getSolution()+"\nGlobal best fitness="+ globalBest.getFitness());
+        System.out.println("Global best solution="+ globalBest.getSolution()
+            +"\nGlobal best fitness="+ globalBest.getFitness());
+    }
+
+    private ArrayList<Long> createRandomSolution(Particle particle) {
+        ArrayList<Long> actualSolution = new ArrayList<>(particle.getSolution());
+        Collections.shuffle(actualSolution);
+        return actualSolution;
+    }
+
+    private ArrayList<Velocity> createBasicSwapSequence(Particle particle, ArrayList<Long> bestSolution, double r, double probability) {
+        ArrayList<Velocity> basicSwapSequence = new ArrayList<>();
+        ArrayList<Long> actualSolution = new ArrayList<>(particle.getSolution());
+        for (int j = 0; j < numCities; j++) {
+            if(!bestSolution.get(j).equals(actualSolution.get(j))) {
+                Velocity swapOperator = new Velocity(j, actualSolution.indexOf(bestSolution.get(j)), probability);
+
+                Long aux = actualSolution.get(swapOperator.getX1());
+                actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
+                actualSolution.set(swapOperator.getX2(), aux);
+
+                if(r < swapOperator.getProbability()) {
+                    basicSwapSequence.add(swapOperator);
+                }
+            }
+        }
+        return basicSwapSequence;
+    }
+
+    private ArrayList<Long> createSolution(Particle particle, ArrayList<Velocity> velocities) {
+        ArrayList<Long> newSolution = particle.getSolution();
+        for (Velocity swapOperator : velocities) {
+            Long aux = newSolution.get(swapOperator.getX1());
+            newSolution.set(swapOperator.getX1(), newSolution.get(swapOperator.getX2()));
+            newSolution.set(swapOperator.getX2(), aux);
+        }
+        return newSolution;
     }
 
     //passo 1
