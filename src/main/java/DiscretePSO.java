@@ -29,8 +29,6 @@ public class DiscretePSO {
                 .min(Comparator.comparing(Particle::getBestFitness))
                 .orElseThrow(NoSuchElementException::new);
 
-            System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
-
             for (Particle particle : swarm) {
                 ArrayList<Long> globalBestSolution = new ArrayList<>(globalBest.getBestSolution());
                 ArrayList<Long> particleBestSolution = new ArrayList<>(particle.getBestSolution());
