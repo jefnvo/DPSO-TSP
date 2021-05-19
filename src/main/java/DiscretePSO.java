@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 public class DiscretePSO {
     int numCities; //d-dimensional
@@ -25,6 +26,7 @@ public class DiscretePSO {
     public void execute() {
         ArrayList<Particle> swarm = initializeSwarm();
         for (int i = 0; i < iterations; i++) {
+
             globalBest = swarm.stream()
                 .min(Comparator.comparing(Particle::getBestFitness))
                 .orElseThrow(NoSuchElementException::new);
@@ -32,66 +34,43 @@ public class DiscretePSO {
             System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
 
             for (Particle particle : swarm) {
-                double bRand = Math.random();
+                Random rnd = new Random();
+
+                double rLoc = rnd.nextDouble();
+                double rGlob = rnd.nextDouble();
 
                 ArrayList<Long> globalBestSolution = new ArrayList<>(globalBest.getBestSolution());
                 ArrayList<Long> particleBestSolution = new ArrayList<>(particle.getBestSolution());
 
 
-                //create dloc
-                ArrayList<Velocity> dLocal = createBasicSwapSequence(particle, particleBestSolution, alfa);
-                ArrayList<Long> distanceLoc = createSolution(particle, dLocal);
+                //dLoc = Xi(t) + rLoc * bLoc * (Pi - Xi(t))
+                ArrayList<Velocity> dLocExchanges = getAttractor( new ArrayList<>(particle.getSolution()), particleBestSolution, rLoc * alfa );
+                ArrayList<Long> dLoc = Utils.applyEdgeExchanges(new ArrayList<>(particle.getSolution()), dLocExchanges);
 
-                //create dglob
-                ArrayList<Velocity> dGlobal =  createBasicSwapSequence(particle, globalBestSolution, beta);
-                ArrayList<Long> distanceGlob = new ArrayList<>(createSolution(particle, dGlobal));
+                // dGlob = Xi(t) + rGlob * bGlob * (Pglob - Xi(t))
+                ArrayList<Velocity> dGlobalExchanges = getAttractor(new ArrayList<>(particle.getSolution()), globalBestSolution, rGlob*beta);
+                ArrayList<Long> dGlob = Utils.applyEdgeExchanges(new ArrayList<>(particle.getSolution()), dGlobalExchanges);
 
-                //create vrand
-                ArrayList<Long> randomSolution = createRandomSolution(particle);
-                ArrayList<Velocity> destinationRandomVelocity =  createBasicSwapSequence(particle, randomSolution, bRand);
+                // Vrand = rRand * bRand * (pRand - Xi(t))
+                double bRand = rnd.nextDouble();
+                double rRand = rnd.nextDouble();
+                ArrayList<Long> pRand = createRandomSolution(particle);
+                ArrayList<Velocity> vRand = getAttractor(new ArrayList<>(particle.getSolution()), pRand, bRand * rRand);
 
-                //dloc - dglob
-                ArrayList<Velocity> basicSwapSequenceLocGlob = new ArrayList<>();
-                for (int j = 0; j < numCities; j++) {
-                    if(!distanceLoc.get(j).equals(distanceGlob.get(j))) {
-                        Velocity swapOperator = new Velocity(j, distanceGlob.indexOf(distanceLoc.get(j)), 0);
+                // Xi(t+1) = dGlob + 1/2 * (dLoc - dGlob) + Vrand
+                dGlob = Utils.applyEdgeExchanges(dGlob, Utils.EdgeExchangesAddition(getAttractor( dGlob, dLoc, 0.5 ), vRand));
 
-                        Long aux = distanceGlob.get(swapOperator.getX1());
-                        distanceGlob.set(swapOperator.getX1(), distanceGlob.get(swapOperator.getX2()));
-                        distanceGlob.set(swapOperator.getX2(), aux);
-
-                        basicSwapSequenceLocGlob.add(swapOperator);
-                    }
-                }
-
-                //0.5 * (dloc - dglob) + vrand
-                ArrayList<Velocity> halfDistance = new ArrayList<>();
-                int halfArrayVelocity = (int) Math.floor(0.5*basicSwapSequenceLocGlob.size());
-                for(int j = 0; j<halfArrayVelocity; j++) {
-                    halfDistance.add(basicSwapSequenceLocGlob.get(j));
-                }
-                ArrayList<Velocity> halfDistancePlusRandVelocity = new ArrayList<>(halfDistance);
-                halfDistancePlusRandVelocity.addAll(destinationRandomVelocity);
-
-                //dglob + 0.5*(dloc-dglob) + vrand
-                for (Velocity swapOperator : halfDistancePlusRandVelocity) {
-                    Long aux = distanceGlob.get(swapOperator.getX1());
-                    distanceGlob.set(swapOperator.getX1(), distanceGlob.get(swapOperator.getX2()));
-                    distanceGlob.set(swapOperator.getX2(), aux);
-                }
-
-                particle.setSolution(distanceGlob);
-                Long actualFitness = calcFitnessTour(distanceGlob);
+                particle.setSolution(dGlob);
+                Long actualFitness = calcFitnessTour(dGlob);
                 particle.setFitness(actualFitness);
 
                 if(actualFitness < particle.getBestFitness()) {
-                    particle.setBestSolution(distanceGlob);
+                    particle.setBestSolution(dGlob);
                     particle.setBestFitness(actualFitness);
                 }
             }
         }
-        System.out.println("Global best solution="+ globalBest.getSolution()
-            +"\nGlobal best fitness="+ globalBest.getBestFitness());
+        System.out.println("Global best fitness="+ globalBest.getBestFitness());
     }
 
     private ArrayList<Long> createRandomSolution(Particle particle) {
@@ -129,7 +108,6 @@ public class DiscretePSO {
         return newSolution;
     }
 
-    //passo 1
     public ArrayList<Particle> initializeSwarm() {
         ArrayList<Particle> swarm = new ArrayList<>();
         ArrayList<Long> tour = new ArrayList<>();
@@ -158,20 +136,8 @@ public class DiscretePSO {
         return  distanceFirstAndLastCity + totalDistance;
     }
 
-    public Particle getGlobalBest() {
-        return globalBest;
+    private ArrayList<Velocity> getAttractor(ArrayList<Long> solution, ArrayList<Long> attractor, double cte){
+        // (rLoc * bLoc) * (Pi - Xi(t))
+        return Utils.EdgeExchangesByConstant( Utils.getListOfEdgeExchanges( attractor, solution ), cte );
     }
-
-    public void setGlobalBest(Particle globalBest) {
-        this.globalBest = globalBest;
-    }
-
-    public int getIterations() {
-        return iterations;
-    }
-
-    public void setIterations(int iterations) {
-        this.iterations = iterations;
-    }
-
 }
