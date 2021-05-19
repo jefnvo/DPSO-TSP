@@ -31,7 +31,6 @@ public class DiscretePSO {
                 .min(Comparator.comparing(Particle::getBestFitness))
                 .orElseThrow(NoSuchElementException::new);
 
-            System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
 
             for (Particle particle : swarm) {
                 Random rnd = new Random();
