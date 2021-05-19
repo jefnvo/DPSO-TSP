@@ -32,23 +32,23 @@ public class DiscretePSO {
             System.out.println("Iteration="+i+"\nBestFitness="+ globalBest.getFitness()+"\n\n");
 
             for (Particle particle : swarm) {
+                double bRand = Math.random();
+
                 ArrayList<Long> globalBestSolution = new ArrayList<>(globalBest.getBestSolution());
                 ArrayList<Long> particleBestSolution = new ArrayList<>(particle.getBestSolution());
 
-                double bRand = Math.random();
-                double r = Math.random();
 
                 //create dloc
-                ArrayList<Velocity> dLocal = createBasicSwapSequence(particle, particleBestSolution, r, alfa);
+                ArrayList<Velocity> dLocal = createBasicSwapSequence(particle, particleBestSolution, alfa);
                 ArrayList<Long> distanceLoc = createSolution(particle, dLocal);
 
                 //create dglob
-                ArrayList<Velocity> dGlobal =  createBasicSwapSequence(particle, globalBestSolution, r, beta);
-                ArrayList<Long> distanceGlob = createSolution(particle, dGlobal);
+                ArrayList<Velocity> dGlobal =  createBasicSwapSequence(particle, globalBestSolution, beta);
+                ArrayList<Long> distanceGlob = new ArrayList<>(createSolution(particle, dGlobal));
 
                 //create vrand
                 ArrayList<Long> randomSolution = createRandomSolution(particle);
-                ArrayList<Velocity> destinationRandomVelocity =  createBasicSwapSequence(particle, randomSolution, r, bRand);
+                ArrayList<Velocity> destinationRandomVelocity =  createBasicSwapSequence(particle, randomSolution, bRand);
 
                 //dloc - dglob
                 ArrayList<Velocity> basicSwapSequenceLocGlob = new ArrayList<>();
@@ -64,9 +64,9 @@ public class DiscretePSO {
                     }
                 }
 
-                //0.5 *(dloc - dglob) + vrand
+                //0.5 * (dloc - dglob) + vrand
                 ArrayList<Velocity> halfDistance = new ArrayList<>();
-                int halfArrayVelocity = (int) Math.floor(basicSwapSequenceLocGlob.size());
+                int halfArrayVelocity = (int) Math.floor(0.5*basicSwapSequenceLocGlob.size());
                 for(int j = 0; j<halfArrayVelocity; j++) {
                     halfDistance.add(basicSwapSequenceLocGlob.get(j));
                 }
@@ -91,7 +91,7 @@ public class DiscretePSO {
             }
         }
         System.out.println("Global best solution="+ globalBest.getSolution()
-            +"\nGlobal best fitness="+ globalBest.getFitness());
+            +"\nGlobal best fitness="+ globalBest.getBestFitness());
     }
 
     private ArrayList<Long> createRandomSolution(Particle particle) {
@@ -100,18 +100,18 @@ public class DiscretePSO {
         return actualSolution;
     }
 
-    private ArrayList<Velocity> createBasicSwapSequence(Particle particle, ArrayList<Long> bestSolution, double r, double probability) {
+    private ArrayList<Velocity> createBasicSwapSequence(Particle particle, ArrayList<Long> bestSolution, double probability) {
         ArrayList<Velocity> basicSwapSequence = new ArrayList<>();
         ArrayList<Long> actualSolution = new ArrayList<>(particle.getSolution());
-        for (int j = 0; j < numCities; j++) {
-            if(!bestSolution.get(j).equals(actualSolution.get(j))) {
-                Velocity swapOperator = new Velocity(j, actualSolution.indexOf(bestSolution.get(j)), probability);
+        for (int i = 0; i < numCities; i++) {
+            if(!bestSolution.get(i).equals(actualSolution.get(i))) {
+                Velocity swapOperator = new Velocity(i, actualSolution.indexOf(bestSolution.get(i)), probability);
 
                 Long aux = actualSolution.get(swapOperator.getX1());
                 actualSolution.set(swapOperator.getX1(), actualSolution.get(swapOperator.getX2()));
                 actualSolution.set(swapOperator.getX2(), aux);
 
-                if(r < swapOperator.getProbability()) {
+                if( Math.random() < swapOperator.getProbability()) {
                     basicSwapSequence.add(swapOperator);
                 }
             }
@@ -120,7 +120,7 @@ public class DiscretePSO {
     }
 
     private ArrayList<Long> createSolution(Particle particle, ArrayList<Velocity> velocities) {
-        ArrayList<Long> newSolution = particle.getSolution();
+        ArrayList<Long> newSolution = new ArrayList<>(particle.getSolution());
         for (Velocity swapOperator : velocities) {
             Long aux = newSolution.get(swapOperator.getX1());
             newSolution.set(swapOperator.getX1(), newSolution.get(swapOperator.getX2()));
