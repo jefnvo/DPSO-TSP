@@ -86,7 +86,7 @@ public class DiscretePSO {
                 }
             }
         }
-        System.out.println("Global best solution="+ globalBest.getSolution()+"\nGlobal best fitness="+ globalBest.getFitness());
+        System.out.println("Global best solution="+ globalBest.getSolution()+"\nGlobal best fitness="+ globalBest.getBestFitness());
     }
 
     //passo 1
